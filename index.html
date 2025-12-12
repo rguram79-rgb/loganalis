@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#00d4ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LogAnalyzer">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Pay-Logic Log Analyzer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+
+        .install-prompt {
+            display: none;
+            background: linear-gradient(90deg, #238636, #2ea043);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .install-prompt button {
+            background: white;
+            color: #238636;
+            margin-left: 15px;
+        }
+
+        .input-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: #0d1117;
+            border: 2px solid #30363d;
+            border-radius: 10px;
+            color: #c9d1d9;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        textarea:focus { outline: none; border-color: #00d4ff; }
+
+        .buttons { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-analyze {
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: white;
+        }
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,212,255,0.4);
+        }
+
+        .btn-filter {
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+            color: white;
+        }
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(245,87,108,0.4);
+        }
+
+        .btn-clear { background: #30363d; color: #fff; }
+        .btn-clear:hover { background: #444; }
+
+        .btn-example { background: #238636; color: #fff; }
+        .btn-example:hover { background: #2ea043; }
+
+        /* Operations Section */
+        .operations-section {
+            background: rgba(245,87,108,0.1);
+            border: 2px solid #f5576c;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .operations-section h3 { color: #f5576c; margin-bottom: 10px; }
+        .operations-hint { color: #888; margin-bottom: 15px; font-size: 14px; }
+
+        .operations-list { display: flex; flex-wrap: wrap; gap: 10px; }
+
+        .operation-btn {
+            padding: 10px 20px;
+            background: #0d1117;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .operation-btn:hover {
+            border-color: #f5576c;
+            background: rgba(245,87,108,0.2);
+        }
+        .operation-btn.active {
+            border-color: #f5576c;
+            background: rgba(245,87,108,0.3);
+        }
+
+        .operation-btn .op-id { font-weight: bold; display: block; }
+        .operation-btn .op-info { font-size: 12px; color: #888; }
+
+        /* Chain Section */
+        .chain-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chain-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chain-header h3 { color: #00d4ff; }
+        .chain-header h3 span { color: #f5576c; }
+
+        .btn-copy-chain {
+            background: linear-gradient(90deg, #00d4ff, #0099cc);
+            color: white;
+            padding: 10px 20px;
+        }
+
+        .chain-timeline { position: relative; }
+
+        .chain-step {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #30363d;
+            position: relative;
+        }
+
+        .chain-step.step-check { border-left-color: #00d4ff; }
+        .chain-step.step-info { border-left-color: #7b2cbf; }
+        .chain-step.step-pay { border-left-color: #238636; }
+        .chain-step.step-error { border-left-color: #f85149; }
+
+        .chain-step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chain-step-type { font-weight: bold; font-size: 1.1em; }
+        .chain-step-time { color: #888; font-size: 13px; }
+
+        .chain-step-code {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .code-success { background: #238636; }
+        .code-error { background: #f85149; }
+        .code-warning { background: #ffc107; color: #000; }
+
+        .chain-step-details {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        .chain-step-body {
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* Result Section */
+        .result-section { display: none; }
+        .result-section.visible { display: block; }
+
+        .verdict {
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .verdict.success {
+            background: linear-gradient(135deg, rgba(35,134,54,0.3), rgba(35,134,54,0.1));
+            border: 2px solid #238636;
+        }
+        .verdict.error-client {
+            background: linear-gradient(135deg, rgba(255,193,7,0.3), rgba(255,193,7,0.1));
+            border: 2px solid #ffc107;
+        }
+        .verdict.error-server {
+            background: linear-gradient(135deg, rgba(248,81,73,0.3), rgba(248,81,73,0.1));
+            border: 2px solid #f85149;
+        }
+
+        .verdict h2 { font-size: 1.5em; margin-bottom: 5px; }
+        .verdict .emoji { font-size: 2em; margin-bottom: 10px; }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .info-card h3 {
+            color: #00d4ff;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-card .value { font-size: 1em; word-break: break-all; }
+
+        .code-display {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .code-200 { background: #238636; }
+        .code-4xx { background: #ffc107; color: #000; }
+        .code-5xx { background: #f85149; }
+
+        .details-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .details-section h3 { color: #00d4ff; margin-bottom: 15px; }
+
+        .detail-row {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 0;
+        }
+        .detail-row:last-child { border-bottom: none; }
+
+        .detail-key { width: 180px; color: #888; flex-shrink: 0; }
+        .detail-value { color: #fff; word-break: break-all; }
+
+        .json-view {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+        .error-codes-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .error-codes-table th, .error-codes-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .error-codes-table th { color: #00d4ff; }
+        .highlight { background: rgba(0,212,255,0.2); }
+
+        /* Format Section */
+        .format-section {
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .format-section label {
+            display: block;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            font-weight: 600;
+        }
+
+        .format-buttons { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+
+        .btn-copy {
+            background: linear-gradient(90deg, #00d4ff, #0099cc);
+            color: white;
+            padding: 10px 20px;
+        }
+        .btn-copy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,212,255,0.4);
+        }
+
+        .formatted-output {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #c9d1d9;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .copy-notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #238636;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            animation: fadeInOut 2s ease;
+            z-index: 1000;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        .offline-indicator {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #f85149;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .offline-indicator.visible { display: block; }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5em; }
+            .buttons { flex-direction: column; }
+            .format-buttons { flex-direction: column; }
+            .detail-row { flex-direction: column; }
+            .detail-key { width: 100%; margin-bottom: 5px; }
+            .chain-header { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Install Prompt -->
+        <div id="installPrompt" class="install-prompt">
+            📱 Установить как приложение?
+            <button onclick="installApp()">Установить</button>
+            <button onclick="dismissInstall()" style="background:#30363d;color:#fff;margin-left:5px;">Нет</button>
+        </div>
+
+        <h1>🔍 Pay-Logic Log Analyzer</h1>
+        <p class="subtitle">Вставь логи — анализируй или фильтруй по Operation ID</p>
+
+        <div class="input-section">
+            <label>📋 Вставь логи сюда (можно много!):</label>
+            <textarea id="logInput" placeholder="Вставь все логи сюда — потом сможешь отфильтровать по Operation ID"></textarea>
+            <div class="buttons">
+                <button class="btn-analyze" onclick="analyzeLog()">🚀 Анализировать</button>
+                <button class="btn-filter" onclick="findAllOperations()">🔗 Найти операции</button>
+                <button class="btn-example" onclick="loadExample()">📝 Пример</button>
+                <button class="btn-example" onclick="loadBigExample()">📝 Много логов</button>
+                <button class="btn-clear" onclick="clearAll()">🗑️ Очистить</button>
+            </div>
+        </div>
+
+        <!-- Operations Filter Section -->
+        <div id="operationsSection" class="operations-section" style="display:none;">
+            <h3>🔗 Найденные операции</h3>
+            <p class="operations-hint">Нажми на Operation ID чтобы увидеть всю цепочку (Check → GetInfo → Pay)</p>
+            <div id="operationsList" class="operations-list"></div>
+        </div>
+
+        <!-- Chain Section -->
+        <div id="chainSection" class="chain-section" style="display:none;">
+            <div class="chain-header">
+                <h3>📊 Цепочка: <span id="chainOperationId"></span></h3>
+                <button class="btn-copy-chain" onclick="copyChain()">📋 Копировать цепочку</button>
+            </div>
+            <div id="chainTimeline" class="chain-timeline"></div>
+        </div>
+
+        <!-- Single Analysis Result -->
+        <div id="resultSection" class="result-section">
+            <div id="verdict" class="verdict"></div>
+            <div id="infoCards" class="info-cards"></div>
+            <div id="requestDetails" class="details-section"></div>
+            <div id="responseDetails" class="details-section"></div>
+
+            <div id="formatSection" class="format-section" style="display:none;">
+                <label>📤 Готово для отправки:</label>
+                <div class="format-buttons">
+                    <button class="btn-copy" onclick="copyFormatted()">📋 Копировать красиво</button>
+                    <button class="btn-copy" onclick="copyCleanLog()" style="background:#30363d;">📋 Только лог</button>
+                </div>
+                <pre id="formattedOutput" class="formatted-output"></pre>
+            </div>
+
+            <div class="details-section">
+                <h3>📖 Справочник кодов</h3>
+                <table class="error-codes-table" id="codesTable">
+                    <thead><tr><th>Код</th><th>Значение</th><th>Чья проблема</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="copyNotification" class="copy-notification">✅ Скопировано!</div>
+        <div id="offlineIndicator" class="offline-indicator">📴 Офлайн режим</div>
+    </div>
+
+    <script>
+        // PWA Install
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installPrompt').style.display = 'block';
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                    document.getElementById('installPrompt').style.display = 'none';
+                });
+            }
+        }
+
+        function dismissInstall() {
+            document.getElementById('installPrompt').style.display = 'none';
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed'));
+        }
+
+        // Offline detection
+        window.addEventListener('online', () => {
+            document.getElementById('offlineIndicator').classList.remove('visible');
+        });
+
+        window.addEventListener('offline', () => {
+            document.getElementById('offlineIndicator').classList.add('visible');
+        });
+
+        // === MAIN APP CODE ===
+        const errorCodes = {
+            200: { msg: "OK — Успешно", blame: "✅ Всё хорошо" },
+            400: { msg: "Bad Request — Неверный запрос", blame: "⚠️ Твоя сторона" },
+            401: { msg: "Unauthorized — Не авторизован", blame: "⚠️ Твоя сторона (API ключ)" },
+            402: { msg: "Person doesn't exist — Клиент не найден", blame: "ℹ️ Данные" },
+            403: { msg: "Forbidden — Доступ запрещён", blame: "⚠️ Твоя сторона" },
+            404: { msg: "Not Found — Не найдено", blame: "⚠️ Твоя сторона (URL)" },
+            413: { msg: "Incorrect Currency — Неверная валюта", blame: "⚠️ Твоя сторона" },
+            420: { msg: "LoanNumber not found / No Active Loans", blame: "ℹ️ Данные" },
+            421: { msg: "Inactive loan — Неактивный кредит", blame: "ℹ️ Данные" },
+            495: { msg: "Invalid payment date time format", blame: "⚠️ Твоя сторона (формат даты!)" },
+            500: { msg: "Internal Server Error", blame: "🔴 100% Сервер!" },
+            502: { msg: "Bad Gateway", blame: "🔴 Сервер" },
+            503: { msg: "Service Unavailable", blame: "🔴 Сервер" },
+            900: { msg: "General error — Общая ошибка", blame: "🔴 Сервер" }
+        };
+
+        let currentChainData = [];
+        let allOperations = {};
+
+        function findAllOperations() {
+            const log = document.getElementById('logInput').value;
+            if (!log.trim()) { alert('Вставь логи для анализа!'); return; }
+
+            allOperations = {};
+            const lines = log.split('\n');
+            
+            lines.forEach(line => {
+                const opIdMatch = line.match(/operation-id=(\d+)/);
+                if (opIdMatch) {
+                    const opId = opIdMatch[1];
+                    if (!allOperations[opId]) allOperations[opId] = [];
+                    allOperations[opId].push(line);
+                }
+                
+                const bracketMatch = line.match(/\[(\d{10,})\]/);
+                if (bracketMatch) {
+                    const opId = bracketMatch[1];
+                    if (!allOperations[opId]) allOperations[opId] = [];
+                    if (!allOperations[opId].includes(line)) allOperations[opId].push(line);
+                }
+            });
+
+            displayOperationsList();
+        }
+
+        function displayOperationsList() {
+            const section = document.getElementById('operationsSection');
+            const list = document.getElementById('operationsList');
+            const opIds = Object.keys(allOperations);
+            
+            if (opIds.length === 0) { alert('Не найдено операций с operation-id'); return; }
+
+            section.style.display = 'block';
+            list.innerHTML = '';
+
+            opIds.forEach(opId => {
+                const lines = allOperations[opId];
+                const hasError = lines.some(l => l.includes('500') || l.includes('"Code":4') || l.includes('serviceError=1') || l.includes('serviceError=3'));
+                const hasSuccess = lines.some(l => l.includes('"Code":200') || l.includes('To success'));
+                
+                const btn = document.createElement('button');
+                btn.className = 'operation-btn';
+                btn.innerHTML = `<span class="op-id">${opId}</span><span class="op-info">${lines.length} записей ${hasError ? '❌' : hasSuccess ? '✅' : '⏳'}</span>`;
+                btn.onclick = (e) => showOperationChain(opId, e);
+                list.appendChild(btn);
+            });
+
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showOperationChain(opId, event) {
+            const lines = allOperations[opId];
+            const chainSection = document.getElementById('chainSection');
+            const timeline = document.getElementById('chainTimeline');
+            
+            document.getElementById('chainOperationId').textContent = opId;
+            document.querySelectorAll('.operation-btn').forEach(b => b.classList.remove('active'));
+            if (event) event.target.closest('.operation-btn').classList.add('active');
+
+            currentChainData = [];
+            let currentStep = null;
+
+            lines.forEach(line => {
+                const timeMatch = line.match(/(\d{2}:\d{2}:\d{2},\d{3})/);
+                const time = timeMatch ? timeMatch[1] : '';
+
+                let stepType = 'info', stepName = '📋 Info';
+                
+                if (line.includes('function=\'Check\'') || line.includes('function=\'check\'')) { stepType = 'check'; stepName = '✓ Check'; }
+                else if (line.includes('function=\'Pay\'') || line.includes('function=\'pay\'') || line.includes('pay request')) { stepType = 'pay'; stepName = '💰 Pay'; }
+                else if (line.includes('getActiveLoans')) { stepType = 'info'; stepName = '📋 GetActiveLoans'; }
+                else if (line.includes('getContact')) { stepType = 'info'; stepName = '👤 GetContact'; }
+                else if (line.includes('GetInvoice')) { stepType = 'info'; stepName = '📄 GetInvoice'; }
+
+                let code = null;
+                const codeMatch = line.match(/"Code":(\d+)/) || line.match(/response with code (\d+)/);
+                if (codeMatch) code = parseInt(codeMatch[1]);
+
+                const urlMatch = line.match(/Using URL:\s*([^\n\r]+)/);
+                const bodyMatch = line.match(/body:\s*(\{[\s\S]*?\})(?=\n|$|\d{2}:)/);
+                const responseMatch = line.match(/response with code \d+:\s*(\{[\s\S]*?\})(?=\n|$)/);
+
+                if (line.includes('Make onlineAdvanced') || line.includes('request body')) {
+                    currentStep = { type: stepType, name: stepName, time: time, url: null, request: null, response: null, code: null, rawLines: [line] };
+                    if (bodyMatch) { try { currentStep.request = JSON.parse(bodyMatch[1]); } catch { currentStep.request = bodyMatch[1]; } }
+                    currentChainData.push(currentStep);
+                } else if (currentStep) {
+                    currentStep.rawLines.push(line);
+                    if (urlMatch) currentStep.url = urlMatch[1].trim();
+                    if (code) currentStep.code = code;
+                    if (responseMatch) { try { currentStep.response = JSON.parse(responseMatch[1]); } catch { currentStep.response = responseMatch[1]; } }
+                }
+            });
+
+            timeline.innerHTML = '';
+            
+            if (currentChainData.length === 0) {
+                timeline.innerHTML = `<div class="chain-step"><div class="chain-step-body">${lines.join('\n')}</div></div>`;
+            } else {
+                currentChainData.forEach((step) => {
+                    const codeClass = step.code === 200 ? 'code-success' : step.code >= 500 ? 'code-error' : step.code ? 'code-warning' : '';
+                    const stepClass = step.code >= 500 ? 'step-error' : step.type === 'check' ? 'step-check' : step.type === 'pay' ? 'step-pay' : 'step-info';
+
+                    const stepEl = document.createElement('div');
+                    stepEl.className = `chain-step ${stepClass}`;
+                    stepEl.innerHTML = `
+                        <div class="chain-step-header">
+                            <span class="chain-step-type">${step.name}</span>
+                            <span class="chain-step-time">${step.time}</span>
+                            ${step.code ? `<span class="chain-step-code ${codeClass}">${step.code}</span>` : ''}
+                        </div>
+                        ${step.url ? `<div class="chain-step-details">📍 ${step.url}</div>` : ''}
+                        ${step.request ? `<div class="chain-step-body"><strong>Request:</strong>\n${JSON.stringify(step.request, null, 2)}</div>` : ''}
+                        ${step.response ? `<div class="chain-step-body"><strong>Response:</strong>\n${JSON.stringify(step.response, null, 2)}</div>` : ''}
+                    `;
+                    timeline.appendChild(stepEl);
+                });
+            }
+
+            chainSection.style.display = 'block';
+            chainSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyChain() {
+            const opId = document.getElementById('chainOperationId').textContent;
+            const lines = allOperations[opId] || [];
+            
+            let formatted = `═══════════════════════════════════════════════════════════\n🔗 ЦЕПОЧКА ОПЕРАЦИИ: ${opId}\n═══════════════════════════════════════════════════════════\n\n`;
+
+            currentChainData.forEach((step, idx) => {
+                formatted += `───────────────────────────────────────────────────────────\n${idx + 1}. ${step.name} | ${step.time} | Code: ${step.code || 'N/A'}\n───────────────────────────────────────────────────────────\n`;
+                if (step.url) formatted += `URL: ${step.url}\n`;
+                if (step.request) formatted += `Request:\n${JSON.stringify(step.request, null, 2)}\n`;
+                if (step.response) formatted += `Response:\n${JSON.stringify(step.response, null, 2)}\n`;
+                formatted += '\n';
+            });
+
+            formatted += `═══════════════════════════════════════════════════════════\nRAW LOGS:\n═══════════════════════════════════════════════════════════\n${lines.join('\n')}`;
+
+            navigator.clipboard.writeText(formatted).then(() => showCopyNotification());
+        }
+
+        function analyzeLog() {
+            const log = document.getElementById('logInput').value;
+            if (!log.trim()) { alert('Вставь лог для анализа!'); return; }
+            displayResult(parseLog(log));
+        }
+
+        function parseLog(log) {
+            const result = { timestamp: null, url: null, requestBody: null, headers: null, responseCode: null, responseBody: null, responseTime: null, operationId: null, identifier: null };
+
+            const timeMatch = log.match(/(\d{2}:\d{2}:\d{2},\d{3})/);
+            if (timeMatch) result.timestamp = timeMatch[1];
+
+            const urlMatch = log.match(/Using URL:\s*([^\n\r]+)/);
+            if (urlMatch) result.url = urlMatch[1].trim();
+
+            const requestMatch = log.match(/request body:\s*(\{[\s\S]*?\})/);
+            if (requestMatch) { try { result.requestBody = JSON.parse(requestMatch[1].replace(/\n/g, '')); } catch { result.requestBody = requestMatch[1]; } }
+
+            const headersMatch = log.match(/headers:\s*\[([^\]]+)\]/);
+            if (headersMatch) result.headers = headersMatch[1];
+
+            const httpCodeMatch = log.match(/response with code (\d{3})/);
+            if (httpCodeMatch) result.responseCode = parseInt(httpCodeMatch[1]);
+
+            const responseMatch = log.match(/response with code \d{3}:\s*(\{[\s\S]*?\})(?:\n|$)/);
+            if (responseMatch) { try { result.responseBody = JSON.parse(responseMatch[1]); if (result.responseBody.Code) result.responseCode = result.responseBody.Code; } catch { result.responseBody = responseMatch[1]; } }
+
+            const timeResultMatch = log.match(/Result in (\d+)ms/);
+            if (timeResultMatch) result.responseTime = timeResultMatch[1] + 'ms';
+
+            const opIdMatch = log.match(/operation-id=(\d+)/);
+            if (opIdMatch) result.operationId = opIdMatch[1];
+
+            const idMatch = log.match(/\[([A-Za-z0-9]+)\]/);
+            if (idMatch) result.identifier = idMatch[1];
+
+            return result;
+        }
+
+        function displayResult(result) {
+            document.getElementById('operationsSection').style.display = 'none';
+            document.getElementById('chainSection').style.display = 'none';
+            
+            const section = document.getElementById('resultSection');
+            section.classList.add('visible');
+
+            const code = result.responseCode || 0;
+            const verdictEl = document.getElementById('verdict');
+            
+            let verdictClass, emoji, title, subtitle;
+            
+            if (code === 200) { verdictClass = 'success'; emoji = '✅'; title = 'Успешно!'; subtitle = 'Запрос выполнен без ошибок'; }
+            else if (code >= 500 || code === 900) { verdictClass = 'error-server'; emoji = '🔴'; title = 'Ошибка сервера!'; subtitle = 'Это НЕ твоя проблема. Проблема на стороне сервера.'; }
+            else if (code === 495) { verdictClass = 'error-client'; emoji = '📅'; title = 'Неверный формат даты!'; subtitle = 'Проверь формат: yyyy-MM-dd\'T\'HH:mm:ss'; }
+            else if (code >= 400) { verdictClass = 'error-client'; emoji = '⚠️'; title = 'Ошибка запроса'; subtitle = 'Проверь данные или формат запроса'; }
+            else if (code === 420 || code === 421) { verdictClass = 'error-client'; emoji = 'ℹ️'; title = 'Данные не найдены'; subtitle = 'Кредит не найден или неактивен'; }
+            else { verdictClass = 'error-client'; emoji = '❓'; title = `Код: ${code}`; subtitle = 'Неизвестный код ответа'; }
+
+            verdictEl.className = `verdict ${verdictClass}`;
+            verdictEl.innerHTML = `<div class="emoji">${emoji}</div><h2>${title}</h2><p>${subtitle}</p>`;
+
+            document.getElementById('infoCards').innerHTML = `
+                <div class="info-card"><h3>Код ответа</h3><span class="code-display code-${code === 200 ? '200' : code >= 500 ? '5xx' : '4xx'}">${code}</span></div>
+                <div class="info-card"><h3>Время</h3><div class="value">${result.timestamp || 'N/A'}</div></div>
+                <div class="info-card"><h3>Время ответа</h3><div class="value">${result.responseTime || 'N/A'}</div></div>
+                <div class="info-card"><h3>Operation ID</h3><div class="value">${result.operationId || result.identifier || 'N/A'}</div></div>
+            `;
+
+            document.getElementById('requestDetails').innerHTML = `<h3>📤 Запрос</h3><div class="detail-row"><div class="detail-key">URL:</div><div class="detail-value">${result.url || 'N/A'}</div></div><div class="detail-row"><div class="detail-key">Body:</div><div class="detail-value"><div class="json-view">${result.requestBody ? JSON.stringify(result.requestBody, null, 2) : 'N/A'}</div></div></div>`;
+
+            const respBody = result.responseBody;
+            document.getElementById('responseDetails').innerHTML = `<h3>📥 Ответ</h3><div class="detail-row"><div class="detail-key">HTTP код:</div><div class="detail-value">${result.responseCode || 'N/A'}</div></div><div class="detail-row"><div class="detail-key">Сообщение:</div><div class="detail-value">${respBody?.Msg || respBody?.error || 'N/A'}</div></div><div class="detail-row"><div class="detail-key">Полный ответ:</div><div class="detail-value"><div class="json-view">${respBody ? JSON.stringify(respBody, null, 2) : 'N/A'}</div></div></div>`;
+
+            const tableBody = document.querySelector('#codesTable tbody');
+            tableBody.innerHTML = '';
+            for (const [codeNum, info] of Object.entries(errorCodes)) {
+                const row = document.createElement('tr');
+                if (parseInt(codeNum) === code) row.classList.add('highlight');
+                row.innerHTML = `<td><span class="code-display code-${codeNum == 200 ? '200' : codeNum >= 500 ? '5xx' : '4xx'}" style="font-size:0.9em;padding:3px 10px;">${codeNum}</span></td><td>${info.msg}</td><td>${info.blame}</td>`;
+                tableBody.appendChild(row);
+            }
+
+            document.getElementById('formatSection').style.display = 'block';
+            document.getElementById('formattedOutput').textContent = generateFormattedLog(result);
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function generateFormattedLog(result) {
+            const code = result.responseCode || 'N/A';
+            const codeInfo = errorCodes[code] || { msg: 'Неизвестный код', blame: '❓ Неизвестно' };
+            return `═══════════════════════════════════════════════════════════\n📋 АНАЛИЗ ЛОГА\n═══════════════════════════════════════════════════════════\n\n⏰ Время: ${result.timestamp || 'N/A'}\n🔢 Operation ID: ${result.operationId || result.identifier || 'N/A'}\n⏱️ Время ответа: ${result.responseTime || 'N/A'}\n\n───────────────────────────────────────────────────────────\n📤 ЗАПРОС\n───────────────────────────────────────────────────────────\nURL: ${result.url || 'N/A'}\n\nBody:\n${result.requestBody ? JSON.stringify(result.requestBody, null, 2) : 'N/A'}\n\n───────────────────────────────────────────────────────────\n📥 ОТВЕТ\n───────────────────────────────────────────────────────────\nКод: ${code}\nЗначение: ${codeInfo.msg}\nПроблема: ${codeInfo.blame}\n\nResponse:\n${result.responseBody ? JSON.stringify(result.responseBody, null, 2) : 'N/A'}\n\n═══════════════════════════════════════════════════════════`;
+        }
+
+        function copyFormatted() { navigator.clipboard.writeText(document.getElementById('formattedOutput').textContent).then(() => showCopyNotification()); }
+        function copyCleanLog() { navigator.clipboard.writeText(document.getElementById('logInput').value).then(() => showCopyNotification()); }
+
+        function showCopyNotification() {
+            const n = document.getElementById('copyNotification');
+            n.style.display = 'block';
+            setTimeout(() => n.style.display = 'none', 2000);
+        }
+
+        function loadExample() {
+            document.getElementById('logInput').value = `16:00:48,176  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - pay request body: {\n  "Alias": "771398",\n  "LoanNumber": "04133230004601",\n  "Amount": 1.0,\n  "Currency": "AZN",\n  "PaymentDateTime": "2025-12-12T16:00:46",\n  "DeviceNo": "120"\n}\n16:00:48,176  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - Using URL: /paypoint/v1/api/loanRepayment/pp_mpay1000131837\n16:00:48,752  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - pay response with code 200: {"Id":1912,"Code":200,"Msg":"OK"}\n16:00:48,753  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - Result in 576ms : Response{serverError=0, serviceError=0}`;
+        }
+
+        function loadBigExample() {
+            document.getElementById('logInput').value = `15:09:30,262  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - Make onlineAdvanced: AdvancedRequest{idPoint=120, idService=2170, function='getActiveLoans', params={id1=1092088, operation-id=1000131824}}\n15:09:30,262  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - Using URL: /paypoint/v1/api/api/getActiveLoans/pp_mpay1000131824\n15:09:30,262  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - advanced request body: {"Alias": "1092088", "OutputParams": ["LoanNumber", "DisbursementDate"]}\n15:09:30,379  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - advanced response with code 200: {"Id":1889,"Code":420,"Msg":"KO: Error: Request rejected. Reason: No Active Loans!"}\n\n15:09:43,142  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - Make onlineAdvanced: AdvancedRequest{idPoint=120, idService=2170, function='Check', params={id1=1092088, operation-id=1000131825}}\n15:09:43,142  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - Using URL: /paypoint/v1/api/api/getContact/pp_mpay1000131825\n15:09:43,142  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - advanced request body: {"Alias": "1092088", "OutputParams": ["ContactCode", "FirstName", "MiddleName", "LastName"]}\n15:09:43,287  INFO RMI TCP Connection(114)-10.111.11.13 [1092088] - advanced response with code 200: {"Id":1890,"Code":200,"Msg":"OK","Body":{"ContactCode":"1092088","FirstName":"First_Name","MiddleName":"SAVALAN","LastName":"Last_Name"}}\n\n16:00:48,176  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - Make onlineAdvanced: AdvancedRequest{function='Pay', params={operation-id=1000131837}}\n16:00:48,176  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - pay request body: {"Alias": "771398", "LoanNumber": "04133230004601", "Amount": 1.0, "Currency": "AZN", "PaymentDateTime": "2025-12-12T16:00:46"}\n16:00:48,176  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - Using URL: /paypoint/v1/api/loanRepayment/pp_mpay1000131837\n16:00:48,752  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - pay response with code 200: {"Id":1912,"Code":200,"Msg":"OK"}\n16:00:48,753  INFO UniversalChildWorkerV3-&662:0/1 [1000131837] - Result in 576ms : Response{serverError=0, serviceError=0}`;
+        }
+
+        function clearAll() {
+            document.getElementById('logInput').value = '';
+            document.getElementById('resultSection').classList.remove('visible');
+            document.getElementById('operationsSection').style.display = 'none';
+            document.getElementById('chainSection').style.display = 'none';
+            document.getElementById('formatSection').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
